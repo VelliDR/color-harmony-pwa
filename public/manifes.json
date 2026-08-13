@@ -1,6 +1,7 @@
 {
   "short_name": "Color Harmony",
-  "name": "Color Harmony & Bit Depth PWA",
+  "name": "Color Harmony M3 & HDR Palette",
+  "description": "32-bit HDR destekli, Material 3 tasarımlı renk çemberi, renk körlüğü simülasyonu ve WCAG erişilebilirlik kiti",
   "icons": [
     {
       "src": "icon-192.png",
@@ -16,8 +17,10 @@
     }
   ],
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "theme_color": "#121212",
-  "background_color": "#121212",
-  "orientation": "portrait-primary"
+  "orientation": "any",
+  "theme_color": "#140D13",
+  "background_color": "#140D13",
+  "categories": ["design", "photo", "utilities"]
 }

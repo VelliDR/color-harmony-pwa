@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/color-harmony-pwa/' // Depo adınızla birebir aynı olmalıdır
+  base: '/color-harmony-pwa/', // GitHub Pages alt klasör dizini
 });
