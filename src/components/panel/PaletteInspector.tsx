@@ -79,7 +79,7 @@ export const PaletteInspector: React.FC = () => {
       black: getContrastRatio(bgRgb, [0, 0, 0])
     };
   }, [colors]);
-
+  
   return (
     <div
       style={{
@@ -92,9 +92,8 @@ export const PaletteInspector: React.FC = () => {
         color: m3Theme.textPrimary,
         width: '340px',
         maxWidth: '100%',
-        maxHeight: 'calc(100vh - 40px)',
-        overflowY: 'auto',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        flexShrink: 0
       }}
     >
       <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 'bold', color: m3Theme.primary, flexShrink: 0 }}>

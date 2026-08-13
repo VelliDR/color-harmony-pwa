@@ -15,30 +15,31 @@ export const App: React.FC = () => {
         display: 'flex',
         flexDirection: 'row',
         flexWrap: 'wrap',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
-        gap: '32px',
-        padding: '20px',
+        gap: '24px',
+        padding: '16px',
         boxSizing: 'border-box'
       }}
     >
-      {/* SOL / ORTA: ETKİLEŞİMLİ RENK ÇEMBERİ KARTON YÜZEYİ */}
+      {/* SOL / ÜST: RENK ÇEMBERİ KARTI */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: '20px',
+          padding: '16px',
           backgroundColor: m3Theme.surface,
           borderRadius: '24px',
           border: `1px solid ${m3Theme.border}`,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          flexShrink: 0
         }}
       >
         <ColorWheel />
       </div>
 
-      {/* SAĞ: MATERIAL 3 AKORDİYONLU KONTROL PANELİ */}
+      {/* SAĞ / ALT: PANEL */}
       <PaletteInspector />
     </div>
   );
