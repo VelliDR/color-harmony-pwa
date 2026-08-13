@@ -2,15 +2,37 @@
 
 import React, { useState } from 'react';
 import { usePaletteStore } from '../../state/usePaletteStore';
+import { ColorObject } from '../../core/math-engine/types';
 import { m3Theme } from '../../theme';
 
-const getLuminance = (hex: string): number => {
-  if (!hex) return 0.5;
+// CSS Stili İçin Güvenli (6 Karakter) HEX Alma
+const getCssHex = (color?: ColorObject, fallback: string = '#F59E0B'): string => {
+  if (!color) return fallback;
+  const rawHex = color.formats?.hex || fallback;
+  const clean = rawHex.replace('#', '');
+  
+  if (clean.length === 12) {
+    return `#${clean.substring(0, 2)}${clean.substring(4, 6)}${clean.substring(8, 10)}`.toUpperCase();
+  }
+  if (clean.length === 3) {
+    return `#${clean.split('').map((c) => c + c).join('')}`.toUpperCase();
+  }
+  if (clean.length === 6) {
+    return `#${clean}`.toUpperCase();
+  }
+  return fallback;
+};
+
+// Relative Luminance (WCAG 2.1)
+const getLuminanceFromHex = (hex: string): number => {
   let cleanHex = hex.replace('#', '');
   if (cleanHex.length === 3) {
     cleanHex = cleanHex.split('').map((c) => c + c).join('');
   }
-  const num = parseInt(cleanHex.substring(0, 6), 16);
+  if (cleanHex.length > 6) {
+    cleanHex = cleanHex.substring(0, 6);
+  }
+  const num = parseInt(cleanHex, 16);
   if (Number.isNaN(num)) return 0.5;
 
   const r = ((num >> 16) & 255) / 255;
@@ -25,8 +47,8 @@ const getLuminance = (hex: string): number => {
 };
 
 const getContrastRatio = (hex1: string, hex2: string): number => {
-  const l1 = getLuminance(hex1);
-  const l2 = getLuminance(hex2);
+  const l1 = getLuminanceFromHex(hex1);
+  const l2 = getLuminanceFromHex(hex2);
   const bright = Math.max(l1, l2);
   const dark = Math.min(l1, l2);
   return (bright + 0.05) / (dark + 0.05);
@@ -40,12 +62,16 @@ export const UIPreview: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('ui');
   const [visionMode, setVisionMode] = useState<VisionMode>('normal');
 
-  const primaryHex = colors[0]?.formats?.hex || '#F59E0B';
-  const secondary1Hex = colors[1]?.formats?.hex || primaryHex;
-  const secondary2Hex = colors[2]?.formats?.hex || secondary1Hex;
+  // CSS İçin Güvenli Stil Renkleri (Tarayıcı için 6 haneli)
+  const cssPrimaryHex = getCssHex(colors[0], '#F59E0B');
+  const cssSecondary1Hex = getCssHex(colors[1], cssPrimaryHex);
+  const cssSecondary2Hex = getCssHex(colors[2], cssSecondary1Hex);
+
+  // Ekranda Basılacak Ham Değerler (Bit Derinliğine Göre 6/12 Haneli Metin)
+  const rawPrimaryHex = colors[0]?.formats?.hex || cssPrimaryHex;
 
   const textOnPrimary =
-    getContrastRatio(primaryHex, '#FFFFFF') >= getContrastRatio(primaryHex, '#000000')
+    getContrastRatio(cssPrimaryHex, '#FFFFFF') >= getContrastRatio(cssPrimaryHex, '#000000')
       ? '#FFFFFF'
       : '#000000';
 
@@ -126,7 +152,7 @@ export const UIPreview: React.FC = () => {
             style={{
               padding: '12px',
               borderRadius: '12px',
-              backgroundColor: primaryHex,
+              backgroundColor: cssPrimaryHex,
               color: textOnPrimary,
               display: 'flex',
               flexDirection: 'column',
@@ -148,8 +174,9 @@ export const UIPreview: React.FC = () => {
               >
                 M3 CARD
               </span>
-              <span style={{ fontSize: '11px', fontFamily: m3Theme.fontMono, fontWeight: 600 }}>
-                {primaryHex}
+              {/* SEÇİLEN BİT DERİNLİĞİNE GÖRE HAM KOD BURADA GÖSTERİLİYOR */}
+              <span style={{ fontSize: '10px', fontFamily: m3Theme.fontMono, fontWeight: 600 }}>
+                {rawPrimaryHex}
               </span>
             </div>
             <div style={{ fontSize: '13px', fontWeight: 700 }}>Material 3 Dynamic Surface</div>
@@ -160,7 +187,7 @@ export const UIPreview: React.FC = () => {
                   borderRadius: '6px',
                   border: 'none',
                   backgroundColor: textOnPrimary,
-                  color: primaryHex,
+                  color: cssPrimaryHex,
                   fontWeight: 700,
                   fontSize: '11px'
                 }}
@@ -186,10 +213,10 @@ export const UIPreview: React.FC = () => {
 
         {viewMode === 'typography' && (
           <div style={{ padding: '12px', borderRadius: '12px', backgroundColor: m3Theme.surfaceHighest, border: `1px solid ${m3Theme.border}`, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ fontSize: '16px', fontWeight: 800, color: primaryHex, fontFamily: m3Theme.fontSans }}>
+            <div style={{ fontSize: '16px', fontWeight: 800, color: cssPrimaryHex, fontFamily: m3Theme.fontSans }}>
               Başlık Metni (Display)
             </div>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: secondary1Hex, fontFamily: m3Theme.fontSans }}>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: cssSecondary1Hex, fontFamily: m3Theme.fontSans }}>
               Alt Başlık & Vurgu Metni
             </div>
             <div style={{ fontSize: '11px', color: m3Theme.textPrimary, lineHeight: '1.4', fontFamily: m3Theme.fontSans }}>
@@ -208,11 +235,11 @@ export const UIPreview: React.FC = () => {
                   style={{
                     flex: 1,
                     height: `${35 + ((idx + 1) % 4) * 20}%`,
-                    backgroundColor: c.formats?.hex || '#999',
+                    backgroundColor: getCssHex(c, '#999'),
                     borderRadius: '4px 4px 0 0',
                     transition: 'all 0.15s ease'
                   }}
-                  title={`${c.role}: ${c.formats?.hex}`}
+                  title={`${c.role}: ${c.formats?.hex || getCssHex(c)}`}
                 />
               ))}
             </div>
@@ -230,8 +257,8 @@ export const UIPreview: React.FC = () => {
           {colors.map((c1, i) =>
             colors.map((c2, j) => {
               if (i >= j) return null;
-              const hex1 = c1.formats?.hex || '#000';
-              const hex2 = c2.formats?.hex || '#fff';
+              const hex1 = getCssHex(c1, '#000000');
+              const hex2 = getCssHex(c2, '#FFFFFF');
               const ratio = getContrastRatio(hex1, hex2);
               const passes = ratio >= 4.5;
 

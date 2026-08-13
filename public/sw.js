@@ -1,25 +1,23 @@
 // public/sw.js
-const CACHE_NAME = 'color-harmony-v2';
+const CACHE_NAME = 'color-harmony-v2.09';
 
-// Önbelleğe alınacak çekirdek statik dosyalar (Göreceli yollar)
 const PRECACHE_ASSETS = [
   './',
   'index.html',
   'manifest.json'
 ];
 
-// 1. Kurulum (Install) - Çekirdek dosyaları önbelleğe al
+// 1. Kurulum (Install)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_ASSETS);
     })
   );
-  // Yeni SW'nin anında aktifleşmesini sağla
   self.skipWaiting();
 });
 
-// 2. Etkinleştirme (Activate) - Eski önbellekleri temizle ve kontrolü ele al
+// 2. Etkinleştirme (Activate)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -37,13 +35,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
 
-  // Güvenlik 1: Sadece GET isteklerini işle (POST, PUT vb. önbelleğe alınamaz)
   if (request.method !== 'GET') return;
-
-  // Güvenlik 2: Sadece http ve https protokollerini işle (chrome-extension:// vb. engelle)
   if (!request.url.startsWith('http')) return;
 
-  // A) NAVİGASYON/SAYFA İSTEKLERİ (index.html için Network-First)
+  // A) Sayfa Açılış İsteği (Network-First + Fallback)
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -54,14 +49,15 @@ self.addEventListener('fetch', (event) => {
           });
         })
         .catch(() => {
-          // İnternet yoksa önbellekteki index.html'i ver (GitHub Pages uyumlu)
-          return caches.match('index.html') || caches.match('./');
+          return caches.match(request).then((cached) => {
+            return cached || caches.match('./') || caches.match('index.html');
+          });
         })
     );
     return;
   }
 
-  // B) STATİK VARLIKLAR (JS, CSS, Görsel, Fontlar için Cache-First)
+  // B) Statik Varlıklar (JS, CSS, Resimler)
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -70,7 +66,6 @@ self.addEventListener('fetch', (event) => {
 
       return fetch(request)
         .then((networkResponse) => {
-          // Geçersiz yanıtları önbelleğe alma
           if (
             !networkResponse ||
             networkResponse.status !== 200 ||
@@ -87,7 +82,6 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // Çevrimdışı durumda statik varlık bulunamazsa boş yanıt dön
           return new Response('Çevrimdışı içerik bulunamadı.', {
             status: 503,
             statusText: 'Service Unavailable'

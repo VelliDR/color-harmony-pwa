@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ColorWheel } from './components/wheel/ColorWheel';
+import { InteractiveDial } from './components/wheel/InteractiveDial';
 import { TonalLadderView } from './components/wheel/TonalLadderView';
 import { PaletteInspector } from './components/panel/PaletteInspector';
 import { m3Theme } from './theme';
@@ -24,7 +25,7 @@ export const App: React.FC = () => {
         fontFamily: m3Theme.fontSans
       }}
     >
-      {/* GLOBAL SVG FİLTRELER */}
+      {/* GLOBAL SVG RENK KÖRLÜĞÜ FİLTRELERİ */}
       <svg style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}>
         <defs>
           <filter id="protanopia-filter">
@@ -39,7 +40,7 @@ export const App: React.FC = () => {
         </defs>
       </svg>
 
-      {/* SOL KOLON: ÇEMBER + ALTINDA TONAL MERDİVENLER */}
+      {/* SOL KOLON: ÇEMBER + DOKUNSAL AÇI KADRANI + TONAL MERDİVENLER */}
       <div
         style={{
           display: 'flex',
@@ -49,20 +50,24 @@ export const App: React.FC = () => {
           flexShrink: 0
         }}
       >
-        {/* Çember Kutusu */}
+        {/* Çember ve Açı Kadranı Kutusu */}
         <div
           style={{
             display: 'flex',
-            justifyContent: 'center',
+            flexDirection: 'column',
             alignItems: 'center',
             padding: '16px',
             backgroundColor: m3Theme.surface,
             borderRadius: '24px',
             border: `1px solid ${m3Theme.border}`,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+            width: '100%',
+            maxWidth: '420px',
+            boxSizing: 'border-box'
           }}
         >
           <ColorWheel />
+          <InteractiveDial />
         </div>
 
         {/* Çemberin Altındaki Tonal Merdiven */}

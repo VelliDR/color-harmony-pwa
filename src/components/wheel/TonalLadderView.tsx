@@ -2,34 +2,70 @@
 
 import React, { useState } from 'react';
 import { usePaletteStore } from '../../state/usePaletteStore';
-import { ColorObject } from '../../core/math-engine/types';
+import { BitDepth } from '../../core/math-engine/types';
 import { m3Theme } from '../../theme';
 
 type CopyFormat = 'hex' | 'rgb' | 'hsl';
 
-// HSL (h,s,l) -> HEX & RGB Matematiksel Dönüştürücüsü
-const hslToFormats = (h: number, sPerc: number, lPerc: number) => {
+// Bit Derinliğine Duyarlı Format Dönüştürücü
+const hslToShadeFormats = (
+  h: number,
+  sPerc: number,
+  lPerc: number,
+  bitDepth: BitDepth
+) => {
   const s = sPerc / 100;
   const l = lPerc / 100;
   const a = s * Math.min(l, 1 - l);
   const f = (n: number) => {
     const k = (n + h / 30) % 12;
-    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color);
+    return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
   };
-  const r = f(0);
-  const g = f(8);
-  const b = f(4);
 
-  const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
-  const rgb = `rgb(${r}, ${g}, ${b})`;
+  const rNorm = Math.max(0, Math.min(1, f(0)));
+  const gNorm = Math.max(0, Math.min(1, f(8)));
+  const bNorm = Math.max(0, Math.min(1, f(4)));
+
+  let hex = '';
+  let rgb = '';
+
+  if (bitDepth === 8) {
+    const r = Math.round(rNorm * 255);
+    const g = Math.round(gNorm * 255);
+    const b = Math.round(bNorm * 255);
+    hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+    rgb = `rgb(${r}, ${g}, ${b})`;
+  } else {
+    // High Bit Depth (10-bit, 12-bit, 16-bit, 32-Float): 12 Haneli HEX (#RRRRGGGGBBBB)
+    const max16 = 65535;
+    const r16 = Math.round(rNorm * max16);
+    const g16 = Math.round(gNorm * max16);
+    const b16 = Math.round(bNorm * max16);
+
+    const rHex = r16.toString(16).padStart(4, '0').toUpperCase();
+    const gHex = g16.toString(16).padStart(4, '0').toUpperCase();
+    const bHex = b16.toString(16).padStart(4, '0').toUpperCase();
+
+    hex = `#${rHex}${gHex}${bHex}`;
+
+    if (bitDepth === 32) {
+      rgb = `rgb(${rNorm.toFixed(3)}, ${gNorm.toFixed(3)}, ${bNorm.toFixed(3)})`;
+    } else {
+      const maxChannel = (1 << bitDepth) - 1;
+      const rD = Math.round(rNorm * maxChannel);
+      const gD = Math.round(gNorm * maxChannel);
+      const bD = Math.round(bNorm * maxChannel);
+      rgb = `rgb${bitDepth}(${rD}, ${gD}, ${bD})`;
+    }
+  }
+
   const hsl = `hsl(${Math.round(h)}, ${Math.round(sPerc)}%, ${Math.round(lPerc)}%)`;
 
   return { hex, rgb, hsl };
 };
 
 export const TonalLadderView: React.FC = () => {
-  const { colors } = usePaletteStore();
+  const { colors, bitDepth } = usePaletteStore();
   const [copyFormat, setCopyFormat] = useState<CopyFormat>('hex');
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
@@ -90,7 +126,7 @@ export const TonalLadderView: React.FC = () => {
         </div>
       </div>
 
-      {/* KOPYALANDI BİLDİRİMİ VEYA İPUCU */}
+      {/* BİLDİRİM */}
       <div style={{ height: '14px', fontSize: '10px', color: m3Theme.primary, fontFamily: m3Theme.fontMono, textAlign: 'right' }}>
         {copiedText ? `✓ Kopyalandı: ${copiedText}` : `Tıklayınca [${copyFormat.toUpperCase()}] kopyalar`}
       </div>
@@ -103,7 +139,7 @@ export const TonalLadderView: React.FC = () => {
 
           return (
             <div key={color.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {/* Renk Rolü */}
+              {/* Renk Rolü ve Ham Değer */}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: m3Theme.textMuted, fontFamily: m3Theme.fontMono }}>
                 <span>{roleName}</span>
                 <span style={{ fontSize: displayHex.length > 9 ? '9px' : '10px' }}>{displayHex}</span>
@@ -122,8 +158,9 @@ export const TonalLadderView: React.FC = () => {
               >
                 {steps.map((step) => {
                   const itemKey = `${color.id}-${step}`;
-                  const formats = hslToFormats(color.hsl.h, color.hsl.s * 100, step);
+                  const formats = hslToShadeFormats(color.hsl.h, color.hsl.s * 100, step, bitDepth);
                   const isHovered = hoveredKey === itemKey;
+                  const cssBgColor = `hsl(${color.hsl.h}, ${color.hsl.s * 100}%, ${step}%)`;
 
                   return (
                     <div
@@ -134,7 +171,7 @@ export const TonalLadderView: React.FC = () => {
                       title={`${roleName} - Tone ${step}\nHEX: ${formats.hex}\nRGB: ${formats.rgb}\nHSL: ${formats.hsl}`}
                       style={{
                         flex: 1,
-                        backgroundColor: formats.hex,
+                        backgroundColor: cssBgColor,
                         cursor: 'pointer',
                         position: 'relative',
                         zIndex: isHovered ? 10 : 1,
