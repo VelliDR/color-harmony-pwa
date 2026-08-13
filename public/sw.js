@@ -1,5 +1,5 @@
 // public/sw.js
-const CACHE_NAME = 'color-harmony-v2.09';
+const CACHE_NAME = 'color-harmony-v2.08';
 
 const PRECACHE_ASSETS = [
   './',
