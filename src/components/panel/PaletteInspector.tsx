@@ -1,12 +1,12 @@
 // src/components/panel/PaletteInspector.tsx
 
 import React, { useState } from 'react';
-import { usePaletteStore } from '../../state/usePaletteStore';
+import { usePaletteStore, ColorEngine } from '../../state/usePaletteStore';
 import { ColorCardSlot } from './ColorCardSlot';
 import { UIPreview } from './UIPreview';
 import { ExportModal } from './ExportModal';
 import { m3Theme } from '../../theme';
-import { HarmonyRule, BitDepth, ColorSpace, RadiusMode } from '../../core/math-engine/types';
+import { HarmonyRule, BitDepth, ColorSpace } from '../../core/math-engine/types';
 
 export const PaletteInspector: React.FC = () => {
   const {
@@ -16,11 +16,14 @@ export const PaletteInspector: React.FC = () => {
     isSegmented,
     bitDepth,
     colorSpace,
+    colorEngine,
     setRule,
     setRadiusMode,
     setIsSegmented,
     setBitDepth,
-    setColorSpace
+    setColorSpace,
+    setColorEngine,
+    toggleLock
   } = usePaletteStore();
 
   const [openSection, setOpenSection] = useState<string | null>('wheel');
@@ -47,7 +50,15 @@ export const PaletteInspector: React.FC = () => {
         flexShrink: 0
       }}
     >
-      <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: m3Theme.primary, fontFamily: m3Theme.fontSans }}>
+      <h3
+        style={{
+          margin: '0 0 4px 0',
+          fontSize: '18px',
+          fontWeight: 700,
+          color: m3Theme.primary,
+          fontFamily: m3Theme.fontSans
+        }}
+      >
         Color Harmony M3
       </h3>
 
@@ -58,6 +69,25 @@ export const PaletteInspector: React.FC = () => {
         onToggle={() => toggleSection('wheel')}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Renk Motoru (Algısal OKLCH vs Klasik HSL) */}
+          <div>
+            <label style={labelStyle}>RENK MOTORU (ALGISAL PARLAKLIK)</label>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+              <button
+                onClick={() => setColorEngine('hsl')}
+                style={buttonToggleStyle(colorEngine === 'hsl')}
+              >
+                Klasik (HSL)
+              </button>
+              <button
+                onClick={() => setColorEngine('oklch')}
+                style={buttonToggleStyle(colorEngine === 'oklch')}
+              >
+                Algısal (OKLCH)
+              </button>
+            </div>
+          </div>
+
           {/* Çember Modu */}
           <div>
             <label style={labelStyle}>ÇEMBER MODU</label>
@@ -166,7 +196,7 @@ export const PaletteInspector: React.FC = () => {
             <ColorCardSlot
               key={color.id}
               color={color}
-              onToggleLock={() => {}}
+              onToggleLock={toggleLock}
             />
           ))}
         </div>
