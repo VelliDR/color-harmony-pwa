@@ -4,24 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     
-    <!-- M3 Mürdüm Teması Durum Çubuğu Rengi -->
     <meta name="theme-color" content="#140D13" />
-    <meta name="description" content="32-bit HDR destekli, Material 3 tasarımlı renk çemberi ve erişilebilirlik kiti" />
+    <meta name="description" content="32-bit HDR destekli, Material 3 tasarımlı modüler renk çemberi" />
     
     <title>Color Harmony M3</title>
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
     <!-- PWA Manifest & İkonlar -->
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="apple-touch-icon" href="icon-192.png" />
 
-    <!-- Standart & iOS PWA Desteği -->
+    <!-- PWA Meta -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ColorHarmony" />
   </head>
-  <body style="margin: 0; background-color: #140D13; touch-action: manipulation; min-height: 100vh; overflow-x: hidden; overflow-y: auto;">
+  <body style="margin: 0; background-color: #140D13; font-family: 'Inter', sans-serif; touch-action: manipulation; min-height: 100vh; overflow-x: hidden; overflow-y: auto;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

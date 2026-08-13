@@ -9,6 +9,11 @@ import {
   getRingLevelFromRadius,
   RING_LEVELS
 } from '../../core/math-engine/polar';
+import {
+  hslToNormalizedRGB,
+  quantizeChannels,
+  formatColorStrings
+} from '../../core/math-engine/color-math';
 import { ColorObject, HarmonyRule } from '../../core/math-engine/types';
 import { m3Theme } from '../../theme';
 
@@ -23,29 +28,9 @@ const RULE_OFFSETS: Record<HarmonyRule, number[]> = {
   analogous: [0, 30, 60],
   'split-complementary': [0, 150, 210],
   tetradic: [0, 90, 180, 270],
+  monochromatic: [0, 0, 0],
   square: [0, 90, 180, 270],
-  monochromatic: [0, 0, 0]
-  ,achromatic: [0]
-};
-
-const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-  let r = 0, g = 0, b = 0;
-
-  if (0 <= h && h < 60) { r = c; g = x; b = 0; }
-  else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
-  else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
-  else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
-  else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
-  else if (300 <= h && h <= 360) { r = c; g = 0; b = x; }
-
-  return [
-    Math.round((r + m) * 255),
-    Math.round((g + m) * 255),
-    Math.round((b + m) * 255)
-  ];
+  achromatic: [0, 0, 0]
 };
 
 export const GeometryOverlay: React.FC<GeometryOverlayProps> = ({
@@ -57,6 +42,8 @@ export const GeometryOverlay: React.FC<GeometryOverlayProps> = ({
     rule,
     radiusMode,
     isSegmented,
+    bitDepth,
+    colorSpace,
     setColors
   } = usePaletteStore();
 
@@ -68,10 +55,13 @@ export const GeometryOverlay: React.FC<GeometryOverlayProps> = ({
 
   const updatePaletteFromHandle = useCallback(
     (targetIndex: number, newRadius: number, newAngle: number) => {
-      const currentRule = usePaletteStore.getState().rule;
-      const currentRadiusMode = usePaletteStore.getState().radiusMode;
-      const currentIsSegmented = usePaletteStore.getState().isSegmented;
-      const currentColors = usePaletteStore.getState().colors;
+      const state = usePaletteStore.getState();
+      const currentRule = state.rule;
+      const currentRadiusMode = state.radiusMode;
+      const currentIsSegmented = state.isSegmented;
+      const currentColors = state.colors;
+      const currentBitDepth = state.bitDepth;
+      const currentColorSpace = state.colorSpace;
 
       const offsets = RULE_OFFSETS[currentRule] || [0];
       const primaryOffset = offsets[targetIndex] || 0;
@@ -103,21 +93,23 @@ export const GeometryOverlay: React.FC<GeometryOverlayProps> = ({
         }
 
         const hsl = polarToHSL(nodeRadius, nodeAngle);
-        const [rInt, gInt, bInt] = hslToRgb(hsl.h, hsl.s, hsl.l);
-        const hex = `#${((1 << 24) + (rInt << 16) + (gInt << 8) + bInt).toString(16).slice(1).toUpperCase()}`;
+        
+        // Bit Depth ve Color Space Entegrasyonu
+        const normRgb = hslToNormalizedRGB(hsl.h, hsl.s, hsl.l);
+        const channels = quantizeChannels(normRgb, currentBitDepth);
+        const formats = formatColorStrings(normRgb, channels, currentColorSpace, currentBitDepth, hsl);
 
         return {
           id: `color-node-${idx}`,
           hsl,
           radius: nodeRadius,
           ringLevel: getRingLevelFromRadius(nodeRadius),
+          angleOffset: offset,
+          bitDepth: currentBitDepth,
+          colorSpace: currentColorSpace,
           isLocked: currentColors[idx]?.isLocked || false,
           role: idx === 0 ? 'Primary' : `Secondary ${idx}`,
-          formats: {
-            hex,
-            rgbString: `rgb(${rInt}, ${gInt}, ${bInt})`,
-            hslString: `hsl(${hsl.h}, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%)`
-          }
+          formats
         };
       });
 
@@ -126,10 +118,8 @@ export const GeometryOverlay: React.FC<GeometryOverlayProps> = ({
     [setColors]
   );
 
-  // Kural veya Mod Değiştiğinde Paleti Anında Yeniden Hesapla (Tıklamaya Gerek Kalmadan)
   useEffect(() => {
-    const currentColors = usePaletteStore.getState().colors;
-    const primaryColor = currentColors && currentColors[0];
+    const primaryColor = colors && colors[0];
     const radius = primaryColor && typeof primaryColor.radius === 'number' && !Number.isNaN(primaryColor.radius)
       ? primaryColor.radius
       : 0.5;
@@ -138,7 +128,7 @@ export const GeometryOverlay: React.FC<GeometryOverlayProps> = ({
       : 0;
 
     updatePaletteFromHandle(0, radius, angle);
-  }, [rule, radiusMode, isSegmented, updatePaletteFromHandle]);
+  }, [rule, radiusMode, isSegmented, bitDepth, colorSpace, updatePaletteFromHandle]);
 
   const handlePointerDown = (index: number) => (e: React.PointerEvent) => {
     e.stopPropagation();

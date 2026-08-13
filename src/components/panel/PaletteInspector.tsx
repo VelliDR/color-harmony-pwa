@@ -1,296 +1,292 @@
 // src/components/panel/PaletteInspector.tsx
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { usePaletteStore } from '../../state/usePaletteStore';
 import { ColorCardSlot } from './ColorCardSlot';
+import { UIPreview } from './UIPreview';
 import { ExportModal } from './ExportModal';
-import { Accordion } from '../ui/Accordion';
 import { m3Theme } from '../../theme';
-import { ColorBlindType, simulateColorBlindness } from '../../core/math-engine/colorblind';
-import { getContrastRatio } from '../../core/math-engine/wcag';
-import { HarmonyRule, BitDepth, ColorSpace, ColorObject, RadiusMode } from '../../core/math-engine/types';
-
-// HSL -> RGB Dönüştürücü
-const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-  let r = 0, g = 0, b = 0;
-
-  if (0 <= h && h < 60) { r = c; g = x; b = 0; }
-  else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
-  else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
-  else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
-  else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
-  else if (300 <= h && h <= 360) { r = c; g = 0; b = x; }
-
-  return [
-    Math.round((r + m) * 255),
-    Math.round((g + m) * 255),
-    Math.round((b + m) * 255)
-  ];
-};
-
-// RGB -> HSL Dönüştürücü (Simülasyon Önizlemesi İçin)
-const rgbToHsl = (r: number, g: number, b: number): { h: number; s: number; l: number } => {
-  const rNorm = r / 255, gNorm = g / 255, bNorm = b / 255;
-  const max = Math.max(rNorm, gNorm, bNorm), min = Math.min(rNorm, gNorm, bNorm);
-  let h = 0, s = 0;
-  const l = (max + min) / 2;
-
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break;
-      case gNorm: h = (bNorm - rNorm) / d + 2; break;
-      case bNorm: h = (rNorm - gNorm) / d + 4; break;
-    }
-    h /= 6;
-  }
-
-  return { h: Math.round(h * 360), s, l };
-};
+import { HarmonyRule, BitDepth, ColorSpace, RadiusMode } from '../../core/math-engine/types';
 
 export const PaletteInspector: React.FC = () => {
   const {
     colors,
     rule,
+    radiusMode,
+    isSegmented,
     bitDepth,
     colorSpace,
-    isSegmented,
-    radiusMode,
     setRule,
-    setBitDepth,
-    setColorSpace,
-    setIsSegmented,
     setRadiusMode,
-    toggleLockColor
+    setIsSegmented,
+    setBitDepth,
+    setColorSpace
   } = usePaletteStore();
 
-  const [simType, setSimType] = useState<ColorBlindType>('none');
+  const [openSection, setOpenSection] = useState<string | null>('wheel');
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
-  // Ana renk metin kontrast oranları hesaplaması
-  const contrastData = useMemo(() => {
-    if (colors.length === 0) return null;
-    const bgRgb = hslToRgb(colors[0].hsl.h, colors[0].hsl.s, colors[0].hsl.l);
-    return {
-      white: getContrastRatio(bgRgb, [255, 255, 255]),
-      black: getContrastRatio(bgRgb, [0, 0, 0])
-    };
-  }, [colors]);
-  
+  const toggleSection = (id: string) => {
+    setOpenSection(openSection === id ? null : id);
+  };
+
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '10px',
         padding: '16px',
-        backgroundColor: m3Theme.bg,
-        borderRadius: '16px',
+        backgroundColor: m3Theme.surface,
+        borderRadius: '20px',
+        border: `1px solid ${m3Theme.border}`,
         color: m3Theme.textPrimary,
-        width: '340px',
+        width: '360px',
         maxWidth: '100%',
         boxSizing: 'border-box',
         flexShrink: 0
       }}
     >
-      <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 'bold', color: m3Theme.primary, flexShrink: 0 }}>
+      <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700, color: m3Theme.primary, fontFamily: m3Theme.fontSans }}>
         Color Harmony M3
       </h3>
 
-      {/* 1. AKORDİYON: ÇEMBER VE UYUM AYARLARI */}
-      <Accordion title="Çember ve Uyum Ayarları" defaultOpen={true}>
+      {/* AKORDİYON 1: ÇEMBER VE UYUM AYARLARI */}
+      <AccordionItem
+        title="Çember ve Uyum Ayarları"
+        isOpen={openSection === 'wheel'}
+        onToggle={() => toggleSection('wheel')}
+      >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          
-          {/* ÇEMBER MODU */}
+          {/* Çember Modu */}
           <div>
-            <label style={{ fontSize: '11px', color: m3Theme.textSecondary }}>ÇEMBER MODU</label>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <label style={labelStyle}>ÇEMBER MODU</label>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
               <button
                 onClick={() => setIsSegmented(true)}
-                style={{
-                  flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
-                  backgroundColor: isSegmented ? m3Theme.primary : m3Theme.surfaceVariant,
-                  color: isSegmented ? m3Theme.onPrimary : m3Theme.textPrimary, cursor: 'pointer', fontSize: '11px'
-                }}
+                style={buttonToggleStyle(isSegmented)}
               >
                 48 Renk (5 Halka)
               </button>
               <button
                 onClick={() => setIsSegmented(false)}
-                style={{
-                  flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
-                  backgroundColor: !isSegmented ? m3Theme.primary : m3Theme.surfaceVariant,
-                  color: !isSegmented ? m3Theme.onPrimary : m3Theme.textPrimary, cursor: 'pointer', fontSize: '11px'
-                }}
+                style={buttonToggleStyle(!isSegmented)}
               >
                 Sürekli Tayf
               </button>
             </div>
           </div>
 
-          {/* YARIÇAP GEOMETRİ MODU (HOMOJEN / HETEROJEN) */}
+          {/* Yarıçap Davranışı */}
           <div>
-            <label style={{ fontSize: '11px', color: m3Theme.textSecondary }}>YARIÇAP & PARLAKLIK DAVRANIŞI</label>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <label style={labelStyle}>YARIÇAP & PARLAKLIK DAVRANIŞI</label>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
               <button
                 onClick={() => setRadiusMode('homogeneous')}
-                style={{
-                  flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
-                  backgroundColor: radiusMode === 'homogeneous' ? m3Theme.primary : m3Theme.surfaceVariant,
-                  color: radiusMode === 'homogeneous' ? m3Theme.onPrimary : m3Theme.textPrimary, cursor: 'pointer', fontSize: '11px'
-                }}
+                style={buttonToggleStyle(radiusMode === 'homogeneous')}
               >
                 Homojen
               </button>
               <button
                 onClick={() => setRadiusMode('heterogeneous')}
-                style={{
-                  flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
-                  backgroundColor: radiusMode === 'heterogeneous' ? m3Theme.primary : m3Theme.surfaceVariant,
-                  color: radiusMode === 'heterogeneous' ? m3Theme.onPrimary : m3Theme.textPrimary, cursor: 'pointer', fontSize: '11px'
-                }}
+                style={buttonToggleStyle(radiusMode === 'heterogeneous')}
               >
                 Serbest
               </button>
             </div>
           </div>
 
-          {/* RENK UYUM KURALI */}
+          {/* Uyum Kuralı */}
           <div>
-            <label style={{ fontSize: '11px', color: m3Theme.textSecondary }}>RENK UYUM KURALI</label>
+            <label style={labelStyle}>RENK UYUM KURALI</label>
             <select
               value={rule}
               onChange={(e) => setRule(e.target.value as HarmonyRule)}
-              style={{
-                width: '100%', padding: '8px', borderRadius: '8px', marginTop: '4px',
-                backgroundColor: m3Theme.surfaceVariant, color: m3Theme.textPrimary, border: `1px solid ${m3Theme.border}`
-              }}
+              style={selectStyle}
             >
               <option value="triadic">Üçlü (Triadic)</option>
-              <option value="complementary">Tamamlayıcı</option>
-              <option value="analogous">Ardışık (Analogous)</option>
-              <option value="split-complementary">Çapraz Tamamlayıcı</option>
+              <option value="complementary">Tamamlayıcı (Complementary)</option>
+              <option value="analogous">Benzer (Analogous)</option>
+              <option value="split-complementary">Bölünmüş Tamamlayıcı</option>
               <option value="tetradic">Dörtlü (Tetradic)</option>
-              <option value="monochromatic">Monokromatik</option>
+              <option value="square">Kare (Square)</option>
+              <option value="monochromatic">Tek Renk (Monochromatic)</option>
+              <option value="achromatic">Aromatik (Achromatic)</option>
             </select>
           </div>
-
         </div>
-      </Accordion>
+      </AccordionItem>
 
-      {/* 2. AKORDİYON: HASSASİYET VE RENK UZAYI */}
-      <Accordion title="Bit Derinliği & Renk Uzayı">
+      {/* AKORDİYON 2: BİT DERİNLİĞİ & RENK UZAYI */}
+      <AccordionItem
+        title="Bit Derinliği & Renk Uzayı"
+        isOpen={openSection === 'bitdepth'}
+        onToggle={() => toggleSection('bitdepth')}
+      >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div>
-            <label style={{ fontSize: '11px', color: m3Theme.textSecondary }}>BIT DERİNLİĞİ</label>
-            <select
-              value={bitDepth}
-              onChange={(e) => setBitDepth(Number(e.target.value) as BitDepth)}
-              style={{
-                width: '100%', padding: '8px', borderRadius: '8px', marginTop: '4px',
-                backgroundColor: m3Theme.surfaceVariant, color: m3Theme.textPrimary, border: `1px solid ${m3Theme.border}`
-              }}
-            >
-              {([8, 10, 12, 14, 16, 32] as BitDepth[]).map((b) => (
-                <option key={b} value={b}>{b}-bit {b === 32 ? '(HDR Float)' : ''}</option>
+            <label style={labelStyle}>BİT DERİNLİĞİ</label>
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
+              {[8, 10, 12, 16, 32].map((depth) => (
+                <button
+                  key={depth}
+                  onClick={() => setBitDepth(depth as BitDepth)}
+                  style={pillStyle(bitDepth === depth)}
+                >
+                  {depth === 32 ? '32-Float' : `${depth}-bit`}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           <div>
-            <label style={{ fontSize: '11px', color: m3Theme.textSecondary }}>RENK UZAYI</label>
+            <label style={labelStyle}>RENK UZAYI (GAMUT)</label>
             <select
               value={colorSpace}
               onChange={(e) => setColorSpace(e.target.value as ColorSpace)}
-              style={{
-                width: '100%', padding: '8px', borderRadius: '8px', marginTop: '4px',
-                backgroundColor: m3Theme.surfaceVariant, color: m3Theme.textPrimary, border: `1px solid ${m3Theme.border}`
-              }}
+              style={selectStyle}
             >
-              {(['sRGB', 'Display-P3', 'Adobe-RGB', 'Rec2020'] as ColorSpace[]).map((cs) => (
-                <option key={cs} value={cs}>{cs}</option>
-              ))}
+              <option value="sRGB">sRGB (Standart Web)</option>
+              <option value="Display-P3">Display-P3 (Geniş Gamut Apple/OLED)</option>
+              <option value="Adobe-RGB">Adobe-RGB (Baskı & Fotoğraf)</option>
+              <option value="Rec2020">Rec.2020 (HDR Video)</option>
             </select>
           </div>
         </div>
-      </Accordion>
+      </AccordionItem>
 
-      {/* 3. AKORDİYON: RENK KÖRLEŞTİRME & WCAG ANALİZİ */}
-      <Accordion title="Erişilebilirlik & Simülasyon" badge="WCAG">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
-            <label style={{ fontSize: '11px', color: m3Theme.textSecondary }}>RENK KÖRLÜĞÜ SİMÜLASYONU</label>
-            <select
-              value={simType}
-              onChange={(e) => setSimType(e.target.value as ColorBlindType)}
-              style={{
-                width: '100%', padding: '8px', borderRadius: '8px', marginTop: '4px',
-                backgroundColor: m3Theme.surfaceVariant, color: m3Theme.textPrimary, border: `1px solid ${m3Theme.border}`
-              }}
-            >
-              <option value="none">Normal Görme</option>
-              <option value="protanopia">Protanopia (Kırmızı Yoksunluğu)</option>
-              <option value="deuteranopia">Deuteranopia (Yeşil Yoksunluğu)</option>
-              <option value="tritanopia">Tritanopia (Mavi Yoksunluğu)</option>
-            </select>
-          </div>
-
-          <div>
-            <label style={{ fontSize: '11px', color: m3Theme.textSecondary }}>ANA RENK / METİN KONTRASTI</label>
-            {contrastData && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '6px', fontSize: '11px' }}>
-                <div style={{ flex: 1, padding: '6px', backgroundColor: '#FFF', color: '#000', borderRadius: '6px', textAlign: 'center' }}>
-                  Beyaz: <strong>{contrastData.white.toFixed(1)}:1</strong> {contrastData.white >= 4.5 ? '✓ AA' : '✕'}
-                </div>
-                <div style={{ flex: 1, padding: '6px', backgroundColor: '#000', color: '#FFF', borderRadius: '6px', textAlign: 'center' }}>
-                  Siyah: <strong>{contrastData.black.toFixed(1)}:1</strong> {contrastData.black >= 4.5 ? '✓ AA' : '✕'}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </Accordion>
-
-      {/* 4. AKORDİYON: CANLI PALET KARTLARI */}
-      <Accordion title="Canlı Palet Kartları" badge={`${colors.length}`} defaultOpen={true}>
+      {/* AKORDİYON 3: PALET RENKLERİ */}
+      <AccordionItem
+        title={`Palet Renkleri (${colors.length})`}
+        isOpen={openSection === 'colors'}
+        onToggle={() => toggleSection('colors')}
+      >
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {colors.map((color) => {
-            let displayColor: ColorObject = color;
-
-            if (simType !== 'none') {
-              const [r, g, b] = hslToRgb(color.hsl.h, color.hsl.s, color.hsl.l);
-              const [sr, sg, sb] = simulateColorBlindness(r, g, b, simType);
-              const simHsl = rgbToHsl(sr, sg, sb);
-
-              displayColor = {
-                ...color,
-                hsl: simHsl,
-                formats: {
-                  ...color.formats,
-                  hex: `#${((1 << 24) + (sr << 16) + (sg << 8) + sb).toString(16).slice(1).toUpperCase()}`,
-                  rgbString: `rgb(${sr}, ${sg}, ${sb})`
-                }
-              };
-            }
-
-            return (
-              <ColorCardSlot
-                key={color.id}
-                color={displayColor}
-                onToggleLock={toggleLockColor}
-              />
-            );
-          })}
+          {colors.map((color) => (
+            <ColorCardSlot
+              key={color.id}
+              color={color}
+              onToggleLock={() => {}}
+            />
+          ))}
         </div>
-      </Accordion>
+      </AccordionItem>
 
-      {/* 5. AKORDİYON: DIŞA AKTAR / EXPORT */}
-      <Accordion title="Dışa Aktar (CSS, JSON, Swatch)">
-        <ExportModal />
-      </Accordion>
+      {/* AKORDİYON 4: CANLI UI ÖNİZLEME */}
+      <AccordionItem
+        title="Canlı UI Önizleme"
+        isOpen={openSection === 'preview'}
+        onToggle={() => toggleSection('preview')}
+      >
+        <UIPreview />
+      </AccordionItem>
+
+      {/* DIŞA AKTAR BUTONU */}
+      <button
+        onClick={() => setIsExportOpen(true)}
+        style={{
+          marginTop: '6px',
+          padding: '12px',
+          borderRadius: '12px',
+          border: 'none',
+          backgroundColor: m3Theme.primary,
+          color: '#000',
+          fontWeight: 700,
+          fontSize: '13px',
+          fontFamily: m3Theme.fontSans,
+          cursor: 'pointer',
+          boxShadow: '0 4px 16px rgba(245, 158, 11, 0.25)',
+          transition: 'transform 0.1s ease'
+        }}
+      >
+        🚀 Paleti Dışa Aktar (Design Tokens / SVG)
+      </button>
+
+      {/* EXPORT MODAL */}
+      <ExportModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+      />
     </div>
   );
 };
+
+// YARDIMCI AKORDİYON BİLEŞENİ
+const AccordionItem: React.FC<{
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}> = ({ title, isOpen, onToggle, children }) => (
+  <div style={{ backgroundColor: m3Theme.surfaceHigh, borderRadius: '12px', overflow: 'hidden' }}>
+    <button
+      onClick={onToggle}
+      style={{
+        width: '100%',
+        padding: '12px 14px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: 'transparent',
+        border: 'none',
+        color: m3Theme.textPrimary,
+        fontWeight: 600,
+        fontSize: '13px',
+        fontFamily: m3Theme.fontSans,
+        cursor: 'pointer'
+      }}
+    >
+      <span>{title}</span>
+      <span style={{ fontSize: '10px', color: m3Theme.textMuted }}>{isOpen ? '▲' : '▼'}</span>
+    </button>
+    {isOpen && <div style={{ padding: '0 14px 14px 14px' }}>{children}</div>}
+  </div>
+);
+
+// ORTAK STİLLER
+const labelStyle: React.CSSProperties = {
+  fontSize: '10px',
+  fontWeight: 700,
+  color: m3Theme.textMuted,
+  fontFamily: m3Theme.fontSans
+};
+
+const selectStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 10px',
+  marginTop: '4px',
+  backgroundColor: m3Theme.surfaceHighest,
+  border: `1px solid ${m3Theme.border}`,
+  borderRadius: '8px',
+  color: m3Theme.textPrimary,
+  fontSize: '12px',
+  fontFamily: m3Theme.fontSans,
+  outline: 'none'
+};
+
+const buttonToggleStyle = (isActive: boolean): React.CSSProperties => ({
+  flex: 1,
+  padding: '8px 10px',
+  borderRadius: '8px',
+  border: 'none',
+  backgroundColor: isActive ? m3Theme.primary : m3Theme.surfaceHighest,
+  color: isActive ? '#000' : m3Theme.textSecondary,
+  fontWeight: 600,
+  fontSize: '11.5px',
+  fontFamily: m3Theme.fontSans,
+  cursor: 'pointer',
+  transition: 'all 0.15s ease'
+});
+
+const pillStyle = (isActive: boolean): React.CSSProperties => ({
+  padding: '5px 10px',
+  borderRadius: '8px',
+  border: 'none',
+  backgroundColor: isActive ? m3Theme.primary : m3Theme.surfaceHighest,
+  color: isActive ? '#000' : m3Theme.textSecondary,
+  fontWeight: 600,
+  fontSize: '11px',
+  fontFamily: m3Theme.fontMono,
+  cursor: 'pointer',
+  transition: 'all 0.15s ease'
+});

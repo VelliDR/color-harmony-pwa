@@ -1,49 +1,49 @@
 // src/state/usePaletteStore.ts
 
 import { create } from 'zustand';
-import {
-  ColorObject,
-  HarmonyRule,
-  BitDepth,
-  ColorSpace,
-  RadiusMode
-} from '../core/math-engine/types';
+import { generateHarmonyPalette } from '../core/math-engine/color-math';
+import { HarmonyRule, BitDepth, ColorSpace, RadiusMode, ColorObject } from '../core/math-engine/types';
 
 interface PaletteState {
   colors: ColorObject[];
   rule: HarmonyRule;
+  radiusMode: RadiusMode;
+  isSegmented: boolean;
   bitDepth: BitDepth;
   colorSpace: ColorSpace;
-  isSegmented: boolean;
-  radiusMode: RadiusMode;
-
+  setColors: (colors: ColorObject[]) => void;
   setRule: (rule: HarmonyRule) => void;
+  setRadiusMode: (mode: RadiusMode) => void;
+  setIsSegmented: (isSegmented: boolean) => void;
   setBitDepth: (bitDepth: BitDepth) => void;
   setColorSpace: (colorSpace: ColorSpace) => void;
-  setIsSegmented: (isSegmented: boolean) => void;
-  setRadiusMode: (mode: RadiusMode) => void;
-  toggleLockColor: (id: string) => void;
-  setColors: (colors: ColorObject[]) => void;
+  toggleLock: (id: string) => void;
 }
 
 export const usePaletteStore = create<PaletteState>((set) => ({
-  colors: [],
+  // İLK YÜKLEMEDE BOŞ KALMAMASI İÇİN VARSAYILAN PALET DOLDURULUYOR
+  colors: generateHarmonyPalette({
+    rule: 'triadic',
+    baseHue: 0,
+    bitDepth: 8,
+    colorSpace: 'sRGB'
+  }),
   rule: 'triadic',
+  radiusMode: 'homogeneous',
+  isSegmented: true,
   bitDepth: 8,
   colorSpace: 'sRGB',
-  isSegmented: true,
-  radiusMode: 'homogeneous', // Varsayılan olarak homojen geometri ile başlıyoruz
 
+  setColors: (colors) => set({ colors }),
   setRule: (rule) => set({ rule }),
+  setRadiusMode: (radiusMode) => set({ radiusMode }),
+  setIsSegmented: (isSegmented) => set({ isSegmented }),
   setBitDepth: (bitDepth) => set({ bitDepth }),
   setColorSpace: (colorSpace) => set({ colorSpace }),
-  setIsSegmented: (isSegmented) => set({ isSegmented }),
-  setRadiusMode: (radiusMode) => set({ radiusMode }),
-  toggleLockColor: (id) =>
+  toggleLock: (id) =>
     set((state) => ({
       colors: state.colors.map((c) =>
         c.id === id ? { ...c, isLocked: !c.isLocked } : c
       )
-    })),
-  setColors: (colors) => set({ colors })
+    }))
 }));

@@ -10,17 +10,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>
 );
 
-// Service Worker Kaydı
-// src/main.tsx (Alt Kısım)
-if ('serviceWorker' in navigator) {
+// Service Worker SADECE Canlıya Alındığında (Production) Çalışsın!
+if (import.meta.env.VITE_MODE === 'production' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then( // '/sw.js' yerine 'sw.js'
-      (registration) => {
-        console.log('ServiceWorker başarıyla kaydoldu:', registration.scope);
-      },
-      (err) => {
-        console.log('ServiceWorker kaydı başarısız:', err);
-      }
-    );
+    navigator.serviceWorker
+      .register('/color-harmony-pwa/sw.js')
+      .then((reg) => console.log('SW Başarıyla Kaydoldu:', reg.scope))
+      .catch((err) => console.error('SW Kayıt Hatası:', err));
   });
 }
