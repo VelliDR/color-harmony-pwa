@@ -23,7 +23,9 @@ const RULE_OFFSETS: Record<HarmonyRule, number[]> = {
   analogous: [0, 30, 60],
   'split-complementary': [0, 150, 210],
   tetradic: [0, 90, 180, 270],
+  square: [0, 90, 180, 270],
   monochromatic: [0, 0, 0]
+  ,achromatic: [0]
 };
 
 const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {

@@ -15,6 +15,7 @@ export const ColorCardSlot: React.FC<ColorCardSlotProps> = ({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const handleCopy = (text: string, key: string) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 1500);
@@ -22,10 +23,20 @@ export const ColorCardSlot: React.FC<ColorCardSlotProps> = ({
 
   const roleLabels: Record<string, string> = {
     base: 'Ana Renk',
+    primary: 'Ana Renk',
     secondary: 'Sekonder',
     accent: 'Vurgu',
     neutral: 'Nötr'
   };
+
+  // Safe Extractors (Tip Hatalarını Önleyen Güvenlik Kalkanları)
+  const roleKey = color.role ?? 'primary';
+  const roleName = roleLabels[roleKey] || roleKey;
+  const angleOffset = color.angleOffset ?? 0;
+  const bitDepth = color.bitDepth ?? 8;
+  const colorSpace = color.colorSpace ?? 'sRGB';
+  const cssColorL4 = color.formats.cssColorL4 || color.formats.hex;
+  const rawFloatString = color.formats.rawFloatString || '';
 
   return (
     <div
@@ -44,7 +55,7 @@ export const ColorCardSlot: React.FC<ColorCardSlotProps> = ({
       {/* 1. ÜST BAŞLIK */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#AAA' }}>
-          {roleLabels[color.role] || color.role} ({color.angleOffset >= 0 ? `+${color.angleOffset}°` : `${color.angleOffset}°`})
+          {roleName} ({angleOffset >= 0 ? `+${angleOffset}°` : `${angleOffset}°`})
         </span>
         <button
           onClick={() => onToggleLock(color.id)}
@@ -85,7 +96,7 @@ export const ColorCardSlot: React.FC<ColorCardSlotProps> = ({
             cursor: 'pointer'
           }}
         >
-          <span style={{ color: '#888' }}>HEX ({color.bitDepth <= 8 ? '8-bit' : '16-bit'}):</span>
+          <span style={{ color: '#888' }}>HEX ({bitDepth <= 8 ? '8-bit' : `${bitDepth}-bit`}):</span>
           <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
             {copiedKey === 'hex' ? '✓ Kopyalandı' : color.formats.hex}
           </span>
@@ -109,7 +120,7 @@ export const ColorCardSlot: React.FC<ColorCardSlotProps> = ({
         </div>
 
         <div
-          onClick={() => handleCopy(color.formats.cssColorL4, 'css')}
+          onClick={() => handleCopy(cssColorL4, 'css')}
           style={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -119,15 +130,15 @@ export const ColorCardSlot: React.FC<ColorCardSlotProps> = ({
             cursor: 'pointer'
           }}
         >
-          <span style={{ color: '#888' }}>CSS ({color.colorSpace}):</span>
+          <span style={{ color: '#888' }}>CSS ({colorSpace}):</span>
           <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>
-            {copiedKey === 'css' ? '✓ Kopyalandı' : color.formats.cssColorL4}
+            {copiedKey === 'css' ? '✓ Kopyalandı' : cssColorL4}
           </span>
         </div>
 
-        {color.bitDepth >= 16 && (
+        {bitDepth >= 16 && rawFloatString && (
           <div
-            onClick={() => handleCopy(color.formats.rawFloatString, 'float')}
+            onClick={() => handleCopy(rawFloatString, 'float')}
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -139,7 +150,7 @@ export const ColorCardSlot: React.FC<ColorCardSlotProps> = ({
           >
             <span style={{ color: '#888' }}>Float (0-1):</span>
             <span style={{ fontFamily: 'monospace', fontSize: '10px' }}>
-              {copiedKey === 'float' ? '✓ Kopyalandı' : color.formats.rawFloatString}
+              {copiedKey === 'float' ? '✓ Kopyalandı' : rawFloatString}
             </span>
           </div>
         )}

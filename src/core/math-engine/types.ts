@@ -6,14 +6,45 @@ export type HarmonyRule =
   | 'analogous'
   | 'split-complementary'
   | 'tetradic'
-  | 'monochromatic';
+  | 'monochromatic'
+  | 'square'
+  | 'achromatic';
 
 export type BitDepth = 8 | 10 | 12 | 14 | 16 | 32;
 
 export type ColorSpace = 'sRGB' | 'Display-P3' | 'Adobe-RGB' | 'Rec2020';
 
-// Homojen (tüm düğümler aynı halkanın üstünde) veya Heterojen (bağımsız yarıçaplar)
 export type RadiusMode = 'homogeneous' | 'heterogeneous';
+
+export type ColorRole = 'primary' | 'secondary' | 'accent' | 'neutral' | string;
+
+export interface NormalizedRGB {
+  r: number;
+  g: number;
+  b: number;
+}
+
+export interface QuantizedChannels {
+  r: number;
+  g: number;
+  b: number;
+  max: number;
+}
+
+export interface FormattedColorStrings {
+  hex: string;
+  rgbString: string;
+  hslString: string;
+  rawFloatString?: string;
+  cssColorL4?: string;
+}
+
+export interface HarmonyEngineParams {
+  rule: HarmonyRule;
+  baseHue: number;
+  bitDepth?: BitDepth;
+  colorSpace?: ColorSpace;
+}
 
 export interface HSLColor {
   h: number; // 0 - 360
@@ -25,6 +56,7 @@ export interface ColorFormats {
   hex: string;
   rgbString: string;
   hslString: string;
+  rawFloatString?: string;
   cssColorL4?: string;
 }
 
@@ -33,7 +65,10 @@ export interface ColorObject {
   hsl: HSLColor;
   formats: ColorFormats;
   isLocked: boolean;
-  role?: string;
+  role?: ColorRole;
   radius?: number;    // 0.0 (Tam Merkez/Beyaz) -> 0.5 (Saf Renk) -> 1.0 (Dış Kenar/Siyah)
   ringLevel?: number; // 1 (En İç Pastel) -> 3 (Saf Renk) -> 5 (En Dış Gölge)
+  angleOffset?: number;
+  bitDepth?: BitDepth;
+  colorSpace?: ColorSpace;
 }
