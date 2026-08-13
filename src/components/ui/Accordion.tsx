@@ -1,66 +1,60 @@
-// src/components/panel/PaletteInspector.tsx içindeki Akordiyon 1 bölümü:
+// src/components/ui/Accordion.tsx
 
-const {
-  colors,
-  rule,
-  radiusMode,
-  isSegmented,
-  bitDepth,
-  colorSpace,
-  colorEngine,     // <-- YENİ
-  setColorEngine,  // <-- YENİ
-  setRule,
-  // ...
-} = usePaletteStore();
+import React, { useState } from 'react';
+import { m3Theme } from '../../theme';
 
-// ...
+interface AccordionProps {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}
 
-{/* AKORDİYON 1: ÇEMBER VE UYUM AYARLARI */}
-<AccordionItem
-  title="Çember ve Uyum Ayarları"
-  isOpen={openSection === 'wheel'}
-  onToggle={() => toggleSection('wheel')}
->
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-    
-    {/* YENİ: RENK MOTORU (ALGISAL OKLCH VS KLASİK HSL) */}
-    <div>
-      <label style={labelStyle}>RENK MOTORU (ALGISAL PARLAKLIK)</label>
-      <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-        <button
-          onClick={() => setColorEngine('hsl')}
-          style={buttonToggleStyle(colorEngine === 'hsl')}
-        >
-          Klasik (HSL)
-        </button>
-        <button
-          onClick={() => setColorEngine('oklch')}
-          style={buttonToggleStyle(colorEngine === 'oklch')}
-        >
-          Algısal (OKLCH)
-        </button>
-      </div>
+export const Accordion: React.FC<AccordionProps> = ({
+  title,
+  children,
+  defaultOpen = false
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div
+      style={{
+        backgroundColor: m3Theme.surfaceHigh,
+        borderRadius: '12px',
+        overflow: 'hidden',
+        border: `1px solid ${m3Theme.border}`,
+        marginBottom: '8px'
+      }}
+    >
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          padding: '12px 14px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: isOpen ? m3Theme.surfaceHighest : 'transparent',
+          border: 'none',
+          color: m3Theme.textPrimary,
+          fontWeight: 600,
+          fontSize: '13px',
+          fontFamily: m3Theme.fontSans,
+          cursor: 'pointer',
+          transition: 'background-color 0.15s ease'
+        }}
+      >
+        <span>{title}</span>
+        <span style={{ fontSize: '10px', color: m3Theme.textMuted }}>
+          {isOpen ? '▲' : '▼'}
+        </span>
+      </button>
+
+      {isOpen && (
+        <div style={{ padding: '0 14px 14px 14px' }}>
+          {children}
+        </div>
+      )}
     </div>
-
-    {/* Çember Modu (48 Renk / Sürekli Tayf) */}
-    <div>
-      <label style={labelStyle}>ÇEMBER MODU</label>
-      <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-        <button
-          onClick={() => setIsSegmented(true)}
-          style={buttonToggleStyle(isSegmented)}
-        >
-          48 Renk (5 Halka)
-        </button>
-        <button
-          onClick={() => setIsSegmented(false)}
-          style={buttonToggleStyle(!isSegmented)}
-        >
-          Sürekli Tayf
-        </button>
-      </div>
-    </div>
-
-    {/* Yarıçap & Uyum Kuralı devamı... */}
-  </div>
-</AccordionItem>
+  );
+};
