@@ -11,9 +11,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 // Service Worker Kaydı
+// src/main.tsx (Alt Kısım)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(
+    navigator.serviceWorker.register('sw.js').then( // '/sw.js' yerine 'sw.js'
       (registration) => {
         console.log('ServiceWorker başarıyla kaydoldu:', registration.scope);
       },

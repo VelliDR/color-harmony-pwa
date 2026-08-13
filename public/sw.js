@@ -1,10 +1,9 @@
 // public/sw.js
-
 const CACHE_NAME = 'color-harmony-v1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  './',
+  'index.html',
+  'manifest.json'
 ];
 
 // 1. Servis Çalışanının Kurulumu (Önbelleğe Alma)
