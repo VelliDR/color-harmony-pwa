@@ -5,74 +5,53 @@ import { m3Theme } from '../../theme';
 
 interface AccordionProps {
   title: string;
-  badge?: string;
-  defaultOpen?: boolean;
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }
 
 export const Accordion: React.FC<AccordionProps> = ({
   title,
-  badge,
-  defaultOpen = false,
-  children
+  children,
+  defaultOpen = false
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <div
       style={{
-        backgroundColor: m3Theme.surface,
-        borderRadius: m3Theme.radius,
-        border: `1px solid ${m3Theme.border}`,
+        backgroundColor: m3Theme.surfaceHigh,
+        borderRadius: typeof m3Theme.radius === 'object' ? m3Theme.radius.md : '12px',
         overflow: 'hidden',
-        transition: 'all 0.2s ease',
-        flexShrink: 0,            // Elemanların büzülüp sıkışmasını engeller
-        boxSizing: 'border-box',  // Kenarlık ve pedinglerin boyutu bozmasını engeller
-        width: '100%'
+        border: `1px solid ${m3Theme.border}`,
+        marginBottom: '8px'
       }}
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
           width: '100%',
-          padding: '14px 16px',
+          padding: '12px 14px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: isOpen ? m3Theme.surfaceVariant : 'transparent',
+          backgroundColor: isOpen ? m3Theme.surfaceHighest : 'transparent',
           border: 'none',
           color: m3Theme.textPrimary,
+          fontWeight: 600,
           fontSize: '13px',
-          fontWeight: '600',
+          fontFamily: m3Theme.fontSans,
           cursor: 'pointer',
-          textAlign: 'left',
-          boxSizing: 'border-box'
+          transition: 'background-color 0.15s ease'
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {title}
-          {badge && (
-            <span
-              style={{
-                fontSize: '10px',
-                padding: '2px 6px',
-                borderRadius: '8px',
-                backgroundColor: m3Theme.primary,
-                color: m3Theme.onPrimary,
-                fontWeight: 'bold'
-              }}
-            >
-              {badge}
-            </span>
-          )}
-        </span>
-        <span style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-          ▼
+        <span>{title}</span>
+        <span style={{ fontSize: '10px', color: m3Theme.textMuted }}>
+          {isOpen ? '▲' : '▼'}
         </span>
       </button>
 
       {isOpen && (
-        <div style={{ padding: '16px', borderTop: `1px solid ${m3Theme.border}`, boxSizing: 'border-box' }}>
+        <div style={{ padding: '14px', backgroundColor: m3Theme.surfaceVariant || m3Theme.surfaceHigh }}>
           {children}
         </div>
       )}
