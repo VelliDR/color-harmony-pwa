@@ -1,7 +1,7 @@
 {
   "short_name": "Color Harmony",
   "name": "Color Harmony M3 & HDR Palette",
-  "description": "32-bit HDR destekli, Material 3 tasarımlı renk çemberi, renk körlüğü simülasyonu ve WCAG erişilebilirlik kiti",
+  "description": "32-bit HDR destekli, Material 3 tasarımlı renk çemberi",
   "icons": [
     {
       "src": "icon-192.png",
@@ -21,6 +21,5 @@
   "display": "standalone",
   "orientation": "any",
   "theme_color": "#140D13",
-  "background_color": "#140D13",
-  "categories": ["design", "photo", "utilities"]
+  "background_color": "#140D13"
 }

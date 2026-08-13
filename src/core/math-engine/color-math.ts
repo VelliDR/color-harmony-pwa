@@ -37,13 +37,14 @@ export function hslToNormalizedRGB(h: number, s: number, l: number): NormalizedR
 
 export function quantizeChannels(rgb: NormalizedRGB, bitDepth: BitDepth): QuantizedChannels {
   if (bitDepth === 32) {
-    return { r: rgb.r, g: rgb.g, b: rgb.b, maxChannelValue: 1.0 };
+    return { r: rgb.r, g: rgb.g, b: rgb.b, max: 1.0, maxChannelValue: 1.0 };
   }
   const maxVal = Math.pow(2, bitDepth) - 1;
   return {
     r: Math.round(rgb.r * maxVal),
     g: Math.round(rgb.g * maxVal),
     b: Math.round(rgb.b * maxVal),
+    max: maxVal,
     maxChannelValue: maxVal
   };
 }
@@ -52,7 +53,8 @@ export function formatColorStrings(
   rgb: NormalizedRGB,
   quantized: QuantizedChannels,
   colorSpace: ColorSpace,
-  bitDepth: BitDepth
+  bitDepth: BitDepth,
+  hsl?: { h: number; s: number; l: number }
 ): FormattedColorStrings {
   let hex = '';
   if (bitDepth <= 8) {
@@ -75,8 +77,11 @@ export function formatColorStrings(
   const cssColorL4 = `color(${spaceName} ${rgb.r.toFixed(4)} ${rgb.g.toFixed(4)} ${rgb.b.toFixed(4)})`;
   const oklchString = `oklch(${(rgb.r * 100).toFixed(1)}% 0.180 ${(rgb.g * 360).toFixed(1)})`;
   const rawFloatString = `${rgb.r.toFixed(6)}, ${rgb.g.toFixed(6)}, ${rgb.b.toFixed(6)}`;
+  const hslString = hsl
+    ? `hsl(${hsl.h}, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%)`
+    : `hsl(0, 100%, 50%)`;
 
-  return { hex, rgbString, cssColorL4, oklchString, rawFloatString };
+  return { hex, rgbString, hslString, cssColorL4, oklchString, rawFloatString };
 }
 
 interface RuleOffset {
@@ -143,11 +148,18 @@ export function getRuleOffsets(rule: HarmonyRule): RuleOffset[] {
 }
 
 export function generateHarmonyPalette(params: HarmonyEngineParams): ColorObject[] {
-  const { baseColor, rule, bitDepth, colorSpace, snapAngleStep } = params;
+  const {
+    baseColor,
+    baseHue = 0,
+    rule = 'triadic',
+    bitDepth = 8,
+    colorSpace = 'sRGB',
+    snapAngleStep = 0
+  } = params;
 
-  let baseH = 'h' in baseColor ? baseColor.h : 0;
-  let baseS = 's' in baseColor ? baseColor.s : 1.0;
-  let baseL = 'l' in baseColor ? baseColor.l : 0.5;
+  let baseH = baseColor && typeof baseColor === 'object' && 'h' in baseColor ? baseColor.h : baseHue;
+  let baseS = baseColor && typeof baseColor === 'object' && 's' in baseColor ? baseColor.s : 1.0;
+  let baseL = baseColor && typeof baseColor === 'object' && 'l' in baseColor ? baseColor.l : 0.5;
 
   if (snapAngleStep && snapAngleStep > 0) {
     baseH = Math.round(baseH / snapAngleStep) * snapAngleStep;
@@ -167,9 +179,10 @@ export function generateHarmonyPalette(params: HarmonyEngineParams): ColorObject
       targetL = Math.min(1, Math.max(0, baseL + offset.lModifier));
     }
 
+    const targetHsl = { h: targetHue, s: targetS, l: targetL };
     const normalizedRgb = hslToNormalizedRGB(targetHue, targetS, targetL);
     const channels = quantizeChannels(normalizedRgb, bitDepth);
-    const formats = formatColorStrings(normalizedRgb, channels, colorSpace, bitDepth);
+    const formats = formatColorStrings(normalizedRgb, channels, colorSpace, bitDepth, targetHsl);
 
     return {
       id: `col_${Date.now()}_${index}`,
@@ -177,7 +190,7 @@ export function generateHarmonyPalette(params: HarmonyEngineParams): ColorObject
       angleOffset: offset.angleOffset,
       isLocked: false,
       normalized: normalizedRgb,
-      hsl: { h: targetHue, s: targetS, l: targetL },
+      hsl: targetHsl,
       colorSpace,
       bitDepth,
       channels,

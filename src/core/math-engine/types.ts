@@ -22,6 +22,7 @@ export interface NormalizedRGB {
   r: number;
   g: number;
   b: number;
+  a?: number;
 }
 
 export interface QuantizedChannels {
@@ -29,6 +30,7 @@ export interface QuantizedChannels {
   g: number;
   b: number;
   max: number;
+  maxChannelValue?: number;
 }
 
 export interface FormattedColorStrings {
@@ -37,6 +39,7 @@ export interface FormattedColorStrings {
   hslString: string;
   rawFloatString?: string;
   cssColorL4?: string;
+  oklchString?: string;
 }
 
 export interface HarmonyEngineParams {
@@ -44,6 +47,8 @@ export interface HarmonyEngineParams {
   baseHue: number;
   bitDepth?: BitDepth;
   colorSpace?: ColorSpace;
+  baseColor?: any;
+  snapAngleStep?: number;
 }
 
 export interface HSLColor {
@@ -58,6 +63,7 @@ export interface ColorFormats {
   hslString: string;
   rawFloatString?: string;
   cssColorL4?: string;
+  oklchString?: string;
 }
 
 export interface ColorObject {
